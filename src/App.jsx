@@ -1,7 +1,6 @@
-import { Brain, ChevronLeft, ClipboardList, Home, Lock, Sparkles, Trophy, User } from "lucide-react";
+import { Brain, ChevronLeft, ClipboardList, Home, Lock, Settings, Sparkles, Trophy } from "lucide-react";
 import posthog from "posthog-js";
 import { useEffect, useMemo, useState, useRef } from "react";
-import { loadStripe } from "@stripe/stripe-js";
 
 const SESSION_DURATION = 120;
 const MESSAGE_STEP = 10;
@@ -77,7 +76,7 @@ const achievements = [
 const defaultPersistedState = {
   freedomDays: 0, streakDays: 0, lastOpenDate: null, firstOpenDate: null,
   testCompletions: 0, sosStartedCount: 0, sosCompletedCount: 0, lastSosStartedAt: null,
-  visitedTabs: { sos: false, test: false, path: false, account: false },
+  visitedTabs: { sos: false, test: false, path: false },
   sosDailyHistory: {}, achievements: {}, openDates: [],
   exercisesCompleted: {}, onboarding: null,
   dailyTasksCompleted: {},
@@ -128,21 +127,6 @@ function getDailyTasks() {
     { id: "do_exercise", label: "Completa un esercizio", icon: "🏋️", trigger: "exercise" },
     { id: "read_message", label: "Leggi 3 messaggi durante il countdown", icon: "💬", trigger: "auto" },
   ];
-}
-
-// ── Stripe ──────────────────────────────────────────────────────────
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || "");
-
-async function redirectToCheckout(priceId) {
-  const stripe = await stripePromise;
-  if (!stripe) { alert("Errore di connessione. Riprova."); return; }
-  const { error } = await stripe.redirectToCheckout({
-    lineItems: [{ price: priceId, quantity: 1 }],
-    mode: "subscription",
-    successUrl: `${window.location.origin}?pro=1`,
-    cancelUrl: window.location.href,
-  });
-  if (error) alert(error.message);
 }
 
 // ── Breathing Exercise ──────────────────────────────────────────────
@@ -488,6 +472,7 @@ export default function App() {
   // Paywall
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallPlan, setPaywallPlan] = useState("monthly");
+  const [showAccount, setShowAccount] = useState(false);
 
   // Achievement popup
   const [achievementQueue, setAchievementQueue] = useState([]);
@@ -700,13 +685,13 @@ export default function App() {
 
   const openPaywall = () => setShowPaywall(true);
 
-  // Stripe checkout
-  const handleCheckout = async () => {
-    const priceId = paywallPlan === "monthly"
-      ? import.meta.env.VITE_STRIPE_PRICE_MONTHLY
-      : import.meta.env.VITE_STRIPE_PRICE_ANNUAL;
-    if (!priceId) { alert("Configurazione pagamento non trovata. Contatta il supporto."); return; }
-    await redirectToCheckout(priceId);
+  // Stripe checkout via Payment Links
+  const handleCheckout = () => {
+    const url = paywallPlan === "monthly"
+      ? import.meta.env.VITE_STRIPE_LINK_MONTHLY
+      : import.meta.env.VITE_STRIPE_LINK_ANNUAL;
+    if (!url) { alert("Link non disponibile. Riprova tra poco."); return; }
+    window.open(url, "_blank");
   };
 
   return (
@@ -724,7 +709,13 @@ export default function App() {
 
         {/* SOS Header */}
         {activeTab === "sos" && (
-          <header className={`text-center ${phase === "timer" ? "mb-4" : "mb-6"}`}>
+          <header className={`text-center relative ${phase === "timer" ? "mb-4" : "mb-6"}`}>
+            {phase !== "timer" && (
+              <button onClick={() => setShowAccount(true)}
+                className="absolute right-0 top-0 p-2 text-lab-muted hover:text-white transition">
+                <Settings size={20} />
+              </button>
+            )}
             <img src="/logo.png" alt="OCD Freedom" className={`mx-auto block object-contain ${phase === "timer" ? "mb-3 h-16 w-16" : "mb-5 h-24 w-24"}`} />
             <p className="text-xs tracking-[0.18em] text-lab-muted">OCD FREEDOM</p>
             {phase !== "timer" && (<>
@@ -978,71 +969,63 @@ export default function App() {
           </div>
         )}
 
-        {/* ACCOUNT */}
-        {activeTab === "account" && (
-          <div className={centered}>
-            <div className="w-full rounded-2xl border border-white/10 bg-lab-panel p-6 flex flex-col gap-4">
-              <h2 className="text-2xl font-semibold text-center">Il Tuo Account</h2>
-
-              {/* Pro status */}
-              <div className={`rounded-2xl border p-4 text-center ${isPro ? "border-cyan-300/40 bg-cyan-400/10" : "border-white/10 bg-slate-900/60"}`}>
-                <p className="text-lg font-semibold">{isPro ? "✨ Piano Pro Attivo" : "Piano Gratuito"}</p>
-                {!isPro && <p className="text-sm text-lab-muted mt-1">Sblocca tutte le funzionalità</p>}
-                {!isPro && <button onClick={openPaywall} className={`mt-3 ${primaryBtn}`}>Prova Pro — 7 giorni gratis</button>}
-              </div>
-
-              {/* Manage subscription */}
-              {isPro && (
-                <button
-                  onClick={() => window.open("https://billing.stripe.com/p/login/test_00g00", "_blank")}
-                  className={secondaryBtn}>
-                  Gestisci abbonamento
-                </button>
-              )}
-
-              {/* Contact */}
-              <a href="mailto:support@ocdfreedom.it" className={secondaryBtn + " text-center block"}>
-                ✉️ Contattaci
-              </a>
-
-              {/* App info */}
-              <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-sm text-lab-muted space-y-2">
-                <p>📱 OCD Freedom — v1.0</p>
-                <p>🧠 Basato sulla terapia ERP</p>
-                <p>⚠️ Strumento educativo, non sostituisce un professionista</p>
-                <p>🚨 Emergenze: chiama il 112</p>
-              </div>
-
-              {/* Reset data */}
-              <button onClick={() => {
-                if (window.confirm("Sei sicuro? Tutti i progressi verranno cancellati.")) {
-                  window.localStorage.clear();
-                  window.location.reload();
-                }
-              }} className="text-xs text-red-400/60 underline text-center mt-2">
-                Cancella tutti i dati locali
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* NAV — 4 tab con Account */}
+      {/* NAV — 3 tab */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-slate-950/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-[430px] items-center justify-around px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
+        <div className="mx-auto flex w-full max-w-[430px] items-center justify-around px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
           {[
             { id: "sos", label: "SOS", icon: Home },
             { id: "test", label: "Test OCD", icon: ClipboardList },
             { id: "path", label: "Percorso", icon: Trophy },
-            { id: "account", label: "Account", icon: User },
           ].map(({ id, label, icon: Icon }) => (
             <button key={id} onClick={() => { setActiveTab(id); if (id === "path") setShowPaywall(false); }}
-              className={`flex flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs transition ${activeTab === id ? "bg-cyan-400/20 text-cyan-300" : "text-lab-muted hover:text-lab-text"}`}>
+              className={`flex min-w-[88px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs transition ${activeTab === id ? "bg-cyan-400/20 text-cyan-300" : "text-lab-muted hover:text-lab-text"}`}>
               <Icon size={18} /><span>{label}</span>
             </button>
           ))}
         </div>
       </nav>
+
+      {/* ACCOUNT MODAL (gear icon) */}
+      {showAccount && (
+        <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/80 p-4">
+          <div className="w-full max-w-[430px] rounded-2xl border border-white/10 bg-slate-900 p-6 mb-4 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Account</h2>
+              <button onClick={() => setShowAccount(false)} className="text-lab-muted text-2xl leading-none">×</button>
+            </div>
+
+            <div className={`rounded-2xl border p-4 text-center ${isPro ? "border-cyan-300/40 bg-cyan-400/10" : "border-white/10 bg-slate-900/60"}`}>
+              <p className="font-semibold">{isPro ? "✨ Piano Pro Attivo" : "Piano Gratuito"}</p>
+              {!isPro && <p className="text-sm text-lab-muted mt-1">7 giorni gratis, poi €8,99/mese</p>}
+              {!isPro && <button onClick={() => { setShowAccount(false); openPaywall(); }} className={`mt-3 w-full rounded-2xl bg-cyan-400 py-3 text-sm font-semibold text-black`}>Prova Pro gratis</button>}
+            </div>
+
+            {isPro && (
+              <button onClick={() => window.open("https://billing.stripe.com/p/login/4gMcN4eqy8nT06bfCg0Jq00", "_blank")}
+                className="w-full rounded-2xl border border-white/30 py-3 text-sm text-white hover:bg-white/10 transition">
+                Gestisci abbonamento
+              </button>
+            )}
+
+            <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-sm text-lab-muted space-y-1.5">
+              <p>📱 OCD Freedom — v1.0</p>
+              <p>🧠 Basato sulla terapia ERP</p>
+              <p>⚠️ Strumento educativo, non diagnosi</p>
+              <p>🚨 Emergenze: chiama il 112</p>
+            </div>
+
+            <button onClick={() => {
+              if (window.confirm("Sei sicuro? Tutti i progressi verranno cancellati.")) {
+                window.localStorage.clear(); window.location.reload();
+              }
+            }} className="text-xs text-red-400/60 underline text-center">
+              Cancella tutti i dati locali
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* DISCLAIMER */}
       {showDisclaimer && (
