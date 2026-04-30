@@ -119,7 +119,6 @@ function fmtDate(iso) {
   return new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(iso));
 }
 
-// Daily tasks definition
 function getDailyTasks() {
   return [
     { id: "open_app", label: "Apri l'app oggi", icon: "📱", trigger: "auto" },
@@ -485,7 +484,6 @@ export default function App() {
     const key = import.meta.env.VITE_POSTHOG_KEY;
     if (key) posthog.init(key, { api_host: "https://app.posthog.com", person_profiles: "identified_only" });
 
-    // Check pro status from URL (after Stripe redirect)
     if (window.location.search.includes("pro=1")) {
       window.localStorage.setItem(PRO_KEY, "true");
       window.history.replaceState({}, "", window.location.pathname);
@@ -510,12 +508,10 @@ export default function App() {
     const openDates = base.openDates || [];
     if (!openDates.includes(today)) base.openDates = [...openDates, today].slice(-90);
 
-    // Auto-complete "open app" daily task
     if (!base.dailyTasksCompleted) base.dailyTasksCompleted = {};
     if (!base.dailyTasksCompleted[today]) base.dailyTasksCompleted[today] = {};
     base.dailyTasksCompleted[today].open_app = true;
 
-    // Check morning/night achievements
     const hour = new Date().getHours();
     if (hour < 9) setTimeout(() => unlockAchievementDirect(base, "mattiniero"), 2000);
     if (hour >= 22) setTimeout(() => unlockAchievementDirect(base, "notturno"), 2000);
@@ -562,7 +558,6 @@ export default function App() {
     return () => clearTimeout(t);
   }, [activeAchievementPopup, showAchievementPopup]);
 
-  // Achievement triggers
   useEffect(() => { if (persistedState.streakDays >= 3) unlockAchievement("tre_giorni"); }, [persistedState.streakDays]);
   useEffect(() => { if (persistedState.streakDays >= 7) unlockAchievement("una_settimana"); }, [persistedState.streakDays]);
   useEffect(() => { if (persistedState.streakDays >= 14) unlockAchievement("due_settimane"); }, [persistedState.streakDays]);
@@ -573,7 +568,6 @@ export default function App() {
     if (persistedState.sosCompletedCount >= 30) unlockAchievement("trenta_sos");
     if (persistedState.sosCompletedCount >= 50) unlockAchievement("cinquanta_sos");
     if (persistedState.sosCompletedCount >= 100) unlockAchievement("cento_sos");
-    // Minutes recovered
     const onb = persistedState.onboarding;
     const minPerSession = onb?.minutiPerGiorno ? Math.round(onb.minutiPerGiorno / 5) : 10;
     const totalMin = persistedState.sosCompletedCount * minPerSession;
@@ -584,7 +578,6 @@ export default function App() {
   useEffect(() => { const h = persistedState.sosDailyHistory || {}; if (getLastNDates(7).every(d => (h[d] ?? 0) < 2)) unlockAchievement("stai_cambiando"); }, [persistedState.sosDailyHistory]);
   useEffect(() => { setPersistedState(p => ({ ...p, visitedTabs: { ...p.visitedTabs, [activeTab]: true } })); }, [activeTab]);
 
-  // SOS timer
   useEffect(() => { if (phase !== "timer") return; setSecondsLeft(SESSION_DURATION); setMessageIndex(0); setIsMessageVisible(true); }, [phase]);
   useEffect(() => {
     if (phase !== "timer") return;
@@ -670,7 +663,6 @@ export default function App() {
     if (achievementId) unlockAchievement(achievementId);
   };
 
-  // Computed values for progressi
   const onboarding = persistedState.onboarding;
   const minutiPerSessione = onboarding?.minutiPerGiorno ? Math.round(onboarding.minutiPerGiorno / 5) : 10;
   const minutiRipresi = (persistedState.sosCompletedCount || 0) * minutiPerSessione;
@@ -685,7 +677,6 @@ export default function App() {
 
   const openPaywall = () => setShowPaywall(true);
 
-  // Stripe checkout via Payment Links
   const handleCheckout = () => {
     const url = paywallPlan === "monthly"
       ? import.meta.env.VITE_STRIPE_LINK_MONTHLY
@@ -705,15 +696,15 @@ export default function App() {
         }} />
       )}
 
-      <div className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col px-4 pt-8 pb-28">
+      <div className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col px-4 pt-[max(2.5rem,env(safe-area-inset-top))] pb-28">
 
         {/* SOS Header */}
         {activeTab === "sos" && (
-          <header className={`text-center relative ${phase === "timer" ? "mb-4" : "mb-6"}`}>
+          <header className={`text-center relative mt-4 ${phase === "timer" ? "mb-4" : "mb-6"}`}>
             {phase !== "timer" && (
               <button onClick={() => setShowAccount(true)}
                 className="absolute right-0 top-0 p-2 text-lab-muted hover:text-white transition">
-                <Settings size={20} />
+                <Settings size={22} />
               </button>
             )}
             <img src="/logo.png" alt="OCD Freedom" className={`mx-auto block object-contain ${phase === "timer" ? "mb-3 h-16 w-16" : "mb-5 h-24 w-24"}`} />
@@ -863,7 +854,7 @@ export default function App() {
 
         {/* PERCORSO */}
         {activeTab === "path" && !showPaywall && (<>
-          <div className="mb-4 flex gap-1.5 rounded-2xl border border-white/10 bg-slate-900/60 p-1">
+          <div className="mt-4 mb-4 flex gap-1.5 rounded-2xl border border-white/10 bg-slate-900/60 p-1">
             {[["progressi", "Progressi"], ["esercizi", "Esercizi"], ["cammino", "Cammino"]].map(([id, label]) => (
               <button key={id} onClick={() => setPathTab(id)}
                 className={`flex-1 rounded-xl py-2 text-sm font-medium transition ${pathTab === id ? "bg-cyan-400/20 text-cyan-300" : "text-lab-muted hover:text-white"}`}>
@@ -878,7 +869,6 @@ export default function App() {
               {onboarding?.obiettivo && <p className="text-center text-sm text-lab-muted mb-5">Obiettivo: {onboarding.obiettivo}</p>}
               {!onboarding && <p className="text-center text-sm text-lab-muted mb-5"></p>}
 
-              {/* Stats grid */}
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
                   <p className="text-xs uppercase tracking-widest text-lab-muted mb-1">🧠 Giorni di Libertà</p>
@@ -901,24 +891,21 @@ export default function App() {
                 </div>
               </div>
 
-              {/* ERP proof banner */}
               <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-4 mb-4 text-center">
                 <p className="text-xs text-lab-muted leading-relaxed">
                   💡 <strong className="text-white">Basato sulla terapia ERP</strong> — il metodo evidence-based più efficace per il DOC, usato da specialisti in tutto il mondo.
                 </p>
               </div>
 
-              {/* Achievement grid */}
               <p className="text-xs font-medium text-lab-muted mb-3 uppercase tracking-widest">Achievement {unlockedCount}/{achievements.length}</p>
               <div className="grid grid-cols-2 gap-3">
                 {achievementCards.map(a => {
-                  const locked = !a.unlocked;
                   const proLocked = a.pro && !isPro;
                   return (
                     <div key={a.id} className={`rounded-2xl border p-4 flex flex-col items-center text-center gap-1 transition ${
                       a.unlocked ? "border-cyan-300/40 bg-cyan-400/10" : "border-white/10 bg-slate-900/50 opacity-50"
                     }`}>
-                      <p className="text-3xl">{a.unlocked ? a.icon : proLocked ? "🔒" : "🔒"}</p>
+                      <p className="text-3xl">{a.unlocked ? a.icon : "🔒"}</p>
                       <p className="text-sm font-semibold leading-tight">{a.title}</p>
                       <p className="text-xs text-lab-muted leading-snug">{a.desc}</p>
                       {a.unlocked && <p className="text-xs text-cyan-300 mt-1">{fmtDate(a.unlockedAt)}</p>}
@@ -947,7 +934,6 @@ export default function App() {
                 {["✓ Tutti gli esercizi ERP sbloccati", "✓ Achievement avanzati", "✓ Minuti di vita ripresi tracciati", "✓ Storico test OCD comparativo", "✓ Cammino con storico illimitato"].map(f => <li key={f}>{f}</li>)}
               </ul>
 
-              {/* Plan toggle */}
               <div className="grid grid-cols-2 gap-2 mb-4">
                 {[
                   { id: "monthly", label: "Mensile", price: "€8,99/mese", badge: null },
@@ -971,7 +957,7 @@ export default function App() {
 
       </div>
 
-      {/* NAV — 3 tab */}
+      {/* NAV */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-slate-950/95 backdrop-blur">
         <div className="mx-auto flex w-full max-w-[430px] items-center justify-around px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
           {[
@@ -987,7 +973,7 @@ export default function App() {
         </div>
       </nav>
 
-      {/* ACCOUNT MODAL (gear icon) */}
+      {/* ACCOUNT MODAL */}
       {showAccount && (
         <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/80 p-4">
           <div className="w-full max-w-[430px] rounded-2xl border border-white/10 bg-slate-900 p-6 mb-4 flex flex-col gap-4">
@@ -998,8 +984,14 @@ export default function App() {
 
             <div className={`rounded-2xl border p-4 text-center ${isPro ? "border-cyan-300/40 bg-cyan-400/10" : "border-white/10 bg-slate-900/60"}`}>
               <p className="font-semibold">{isPro ? "✨ Piano Pro Attivo" : "Piano Gratuito"}</p>
-              {!isPro && <p className="text-sm text-lab-muted mt-1">7 giorni gratis, poi €8,99/mese</p>}
-              {!isPro && <button onClick={() => { setShowAccount(false); openPaywall(); }} className={`mt-3 w-full rounded-2xl bg-cyan-400 py-3 text-sm font-semibold text-black`}>Prova Pro gratis</button>}
+              {!isPro && (
+                <button
+                  onClick={() => { setShowAccount(false); openPaywall(); }}
+                  className="mt-3 w-full rounded-2xl bg-cyan-400 py-3 text-sm font-semibold text-black"
+                >
+                  Prova Pro Gratis · 7 giorni, poi €8,99/mese
+                </button>
+              )}
             </div>
 
             {isPro && (
