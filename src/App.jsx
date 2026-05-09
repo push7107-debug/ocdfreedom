@@ -1,4 +1,4 @@
-import { Brain, ChevronLeft, ClipboardList, Home, Lock, Settings, Sparkles, Trophy } from "lucide-react";
+import { Brain, ChevronLeft, ClipboardList, Home, Lock, Settings, Sparkles, Trophy, BookOpen } from "lucide-react";
 import posthog from "posthog-js";
 import { useEffect, useMemo, useState, useRef } from "react";
 
@@ -38,12 +38,10 @@ const questions = [
   { text: "Eviti situazioni, luoghi o persone che potrebbero scatenare ossessioni o compulsioni?", options: ["0 – Mai", "1 – Raramente", "2 – A volte", "3 – Spesso", "4 – Quasi sempre"] },
   { text: "Il DOC ti ha fatto perdere opportunità importanti (lavoro, relazioni, esperienze)?", options: ["0 – No, mai", "1 – Qualche piccola occasione", "2 – Alcune opportunità", "3 – Diverse opportunità importanti", "4 – Sì, ha cambiato la mia vita"] },
   { text: "Ti sei sentito in imbarazzo o vergogna a causa dei tuoi pensieri o comportamenti?", options: ["0 – Mai", "1 – Raramente", "2 – A volte", "3 – Spesso", "4 – Quasi sempre"] },
-  { text: "Hai mai avuto pensieri improvvisi e indesiderati che ti hanno spaventato per il loro contenuto — come pensieri di fare del male, pensieri sessuali o religiosi che non vuoi avere?", options: ["0 – No, mai", "1 – Raramente, non mi disturbano molto", "2 – A volte, mi causano disagio", "3 – Spesso, mi fanno sentire in colpa", "4 – Quasi sempre, mi terrorizzano"] },
+  { text: "Hai mai avuto pensieri improvvisi e indesiderati che ti hanno spaventato per il loro contenuto?", options: ["0 – No, mai", "1 – Raramente, non mi disturbano molto", "2 – A volte, mi causano disagio", "3 – Spesso, mi fanno sentire in colpa", "4 – Quasi sempre, mi terrorizzano"] },
 ];
 
-// FREE achievements (primi 12) + PRO achievements (ultimi 14)
 const achievements = [
-  // FREE
   { id: "primo_passo", icon: "🧠", title: "Primo Passo", desc: "Completato il primo test OCD", pro: false },
   { id: "laboratorio", icon: "⚗️", title: "Laboratorio Aperto", desc: "Usato il SOS per la prima volta", pro: false },
   { id: "resistenza", icon: "💪", title: "Resistenza", desc: "Countdown SOS completato senza fermarsi", pro: false },
@@ -56,7 +54,8 @@ const achievements = [
   { id: "mattiniero", icon: "🌅", title: "Mattiniero", desc: "Aperto l'app prima delle 9:00", pro: false },
   { id: "notturno", icon: "🌙", title: "Notturno", desc: "Aperto l'app dopo le 22:00", pro: false },
   { id: "curioso", icon: "🔬", title: "Curioso", desc: "Provato almeno 2 esercizi diversi", pro: false },
-  // PRO
+  { id: "lettore", icon: "📖", title: "Lettore", desc: "Letto il primo articolo", pro: false },
+  { id: "studioso", icon: "🎓", title: "Studioso", desc: "Letti 3 articoli nella libreria", pro: false },
   { id: "un_mese", icon: "🏆", title: "Un Mese", desc: "30 giorni consecutivi — straordinario", pro: true },
   { id: "cinquanta_sos", icon: "⭐", title: "Costanza", desc: "50 sessioni SOS completate", pro: true },
   { id: "cento_sos", icon: "💎", title: "Diamante", desc: "100 sessioni SOS totali", pro: true },
@@ -71,15 +70,167 @@ const achievements = [
   { id: "due_settimane", icon: "📆", title: "Due Settimane", desc: "14 giorni consecutivi nell'app", pro: true },
   { id: "test_cinque", icon: "📊", title: "Analista", desc: "Completato il test OCD 5 volte", pro: true },
   { id: "sos_mattina", icon: "🌄", title: "Guerriero del Mattino", desc: "Usato il SOS tra le 6:00 e le 9:00", pro: true },
+  { id: "esperto", icon: "🧩", title: "Esperto", desc: "Letti tutti gli articoli Pro", pro: true },
+];
+
+// ── ARTICOLI IMPARA ─────────────────────────────────────────────────
+const learnArticles = [
+  {
+    id: "cos_e_doc",
+    icon: "🧠",
+    title: "Cos'è il DOC?",
+    subtitle: "Capire il disturbo ossessivo-compulsivo",
+    readTime: "3 min",
+    pro: false,
+    content: [
+      { type: "intro", text: "Il Disturbo Ossessivo-Compulsivo (DOC) è una condizione in cui la mente produce pensieri intrusivi e indesiderati — le ossessioni — che generano ansia. Per ridurre quell'ansia, la persona esegue comportamenti ripetitivi — le compulsioni." },
+      { type: "heading", text: "Il ciclo del DOC" },
+      { type: "text", text: "Il problema è che le compulsioni danno sollievo temporaneo, ma rinforzano il ciclo. Il cervello impara che l'unico modo per stare meglio è eseguire il rituale — e ogni volta il ciclo diventa più forte." },
+      { type: "callout", emoji: "💡", text: "Il DOC non è una questione di \"essere strano\" o di mancanza di forza di volontà. È un pattern neurobiologico che si può modificare con la terapia giusta." },
+      { type: "heading", text: "Quanto è diffuso?" },
+      { type: "text", text: "Circa il 2-3% della popolazione mondiale ha il DOC. In Italia sono oltre 1 milione di persone. Spesso passa anni senza diagnosi perché i sintomi vengono nascosti per vergogna." },
+      { type: "heading", text: "I temi più comuni" },
+      { type: "list", items: ["Pensieri di fare del male (a se stessi o agli altri)", "Contaminazione e pulizia eccessiva", "Controllo e verifica ripetuta", "Ordine e simmetria", "Pensieri religiosi o sessuali indesiderati", "Dubbio esistenziale e \"senso di incompletezza\""] },
+      { type: "callout", emoji: "⚠️", text: "Avere questi pensieri non ti rende una persona cattiva. La differenza tra una persona con DOC e una senza è che chi ha il DOC attribuisce enorme importanza a questi pensieri — e cerca di eliminarli." },
+    ],
+  },
+  {
+    id: "terapia_erp",
+    icon: "⚕️",
+    title: "La Terapia ERP",
+    subtitle: "Il metodo più efficace per il DOC",
+    readTime: "4 min",
+    pro: false,
+    content: [
+      { type: "intro", text: "L'Esposizione con Prevenzione della Risposta (ERP) è considerata il trattamento gold standard per il DOC. È raccomandata da tutte le linee guida internazionali per la salute mentale." },
+      { type: "heading", text: "Come funziona?" },
+      { type: "text", text: "L'ERP si basa su un principio semplice ma potente: esporti alla situazione che scatena l'ansia, senza eseguire la compulsione. Ripetendo questo processo, il cervello impara che la situazione non è pericolosa e l'ansia si riduce naturalmente." },
+      { type: "callout", emoji: "🔑", text: "L'ansia non è pericolosa. Ha una curva naturale: sale, raggiunge un picco, poi scende da sola. La compulsione interrompe questo processo — impedendo al cervello di imparare." },
+      { type: "heading", text: "I tre passi dell'ERP" },
+      { type: "list", items: ["Esposizione: avvicinarti a ciò che scatena l'ansia", "Prevenzione della risposta: resistere alla compulsione", "Attesa: lasciare che l'ansia scenda da sola"] },
+      { type: "heading", text: "Quanto tempo ci vuole?" },
+      { type: "text", text: "I risultati significativi si vedono in media dopo 12-16 settimane di pratica regolare. Non è una soluzione immediata — è un allenamento del cervello. Ogni volta che resisti, costruisci un nuovo percorso neurale." },
+      { type: "callout", emoji: "💪", text: "Il SOS di OCD Freedom è basato sull'ERP: ti chiede di restare con l'ansia per 2 minuti senza cedere alla compulsione. Ogni sessione completata è un passo reale verso la libertà." },
+    ],
+  },
+  {
+    id: "pensieri_intrusivi",
+    icon: "💭",
+    title: "I Pensieri Intrusivi",
+    subtitle: "Perché li hai e cosa significano davvero",
+    readTime: "3 min",
+    pro: false,
+    content: [
+      { type: "intro", text: "I pensieri intrusivi sono pensieri, immagini o impulsi indesiderati che entrano nella mente senza preavviso. Tutti li hanno — studi dimostrano che oltre il 90% delle persone sperimenta pensieri intrusivi nella vita quotidiana." },
+      { type: "heading", text: "La differenza con il DOC" },
+      { type: "text", text: "Chi non ha il DOC nota il pensiero, lo lascia andare e continua. Chi ha il DOC si fissa sul pensiero, lo interpreta come significativo o pericoloso, e cerca di eliminarlo — il che paradossalmente lo amplifica." },
+      { type: "callout", emoji: "🎯", text: "Sopprimere un pensiero lo rende più forte. È come cercare di non pensare a un elefante rosa — ci pensi subito. La soluzione non è eliminare il pensiero, ma cambiare il rapporto con esso." },
+      { type: "heading", text: "La defusion cognitiva" },
+      { type: "text", text: "La tecnica della defusion cognitiva (usata nell'esercizio \"Osserva il Pensiero\") ti insegna a vedere il pensiero come un evento mentale — non come la realtà. \"Sto avendo il pensiero che...\" invece di \"Devo fare...\"" },
+      { type: "callout", emoji: "🧘", text: "Il pensiero non sei tu. È solo rumore mentale. Puoi notarlo senza dargli peso." },
+    ],
+  },
+  {
+    id: "ansia_curva",
+    icon: "📈",
+    title: "La Curva dell'Ansia",
+    subtitle: "Perché l'ansia passa sempre — se aspetti",
+    readTime: "3 min",
+    pro: true,
+    content: [
+      { type: "intro", text: "Una delle cose più importanti da capire sul DOC è che l'ansia non è infinita. Ha una curva biologica precisa: sale, raggiunge un picco, poi scende da sola — anche senza fare nulla." },
+      { type: "heading", text: "Quanto dura il picco?" },
+      { type: "text", text: "Il picco dell'ansia dura in media 20-45 minuti se non si interviene con la compulsione. Per molti, nei momenti acuti, bastano anche 10-15 minuti di resistenza per sentire il calo." },
+      { type: "callout", emoji: "⏱️", text: "Il SOS di 2 minuti non fa passare tutta l'ansia — ma ti insegna che puoi resistere anche nel momento peggiore. Con la pratica, la curva diventa meno alta e più breve." },
+      { type: "heading", text: "Cosa succede nel cervello" },
+      { type: "text", text: "L'amigdala — la parte del cervello che gestisce la paura — si attiva quando percepisci una minaccia. Se non riceve il \"segnale di pericolo\" che si aspetta (la compulsione), impara gradualmente che la situazione è sicura. Questo processo si chiama abituazione." },
+      { type: "callout", emoji: "🧠", text: "Ogni volta che aspetti che l'ansia scenda da sola, insegni al tuo cervello che può farcela senza il rituale. Nel tempo, il segnale d'allarme diventa sempre più debole." },
+    ],
+  },
+  {
+    id: "evitamento",
+    icon: "🚪",
+    title: "La Trappola dell'Evitamento",
+    subtitle: "Perché evitare peggiora le cose",
+    readTime: "4 min",
+    pro: true,
+    content: [
+      { type: "intro", text: "L'evitamento è uno dei meccanismi più subdoli del DOC. Sembra una soluzione intelligente — se eviti la situazione che scatena l'ansia, non soffri. Ma nel tempo, l'evitamento restringe sempre di più il tuo mondo." },
+      { type: "heading", text: "Come funziona la trappola" },
+      { type: "text", text: "Ogni volta che eviti una situazione, il tuo cervello registra: \"quella cosa era pericolosa\". Il prossimo incontro con quella situazione genera ancora più ansia. Il range di ciò che puoi fare senza ansia si restringe progressivamente." },
+      { type: "callout", emoji: "⚠️", text: "L'evitamento mantiene il DOC in vita. Non fa paura quanto una compulsione attiva, ma è altrettanto potente nel rinforzare il ciclo." },
+      { type: "heading", text: "Evitamento sottile" },
+      { type: "list", items: ["Chiedere rassicurazione (\"sei sicuro che va bene?\")", "Ripassare mentalmente gli eventi per verificare", "Distrarsi appena arriva il pensiero", "Usare oggetti o rituali \"neutralizzanti\"", "Procrastinare decisioni per paura di sbagliare"] },
+      { type: "callout", emoji: "💡", text: "La via d'uscita è l'esposizione graduale — avvicinarsi a ciò che eviti, in modo controllato e progressivo. OCD Freedom ti aiuta a fare questo con il SOS e gli esercizi ERP." },
+    ],
+  },
+  {
+    id: "rassicurazione",
+    icon: "🔄",
+    title: "Il Problema della Rassicurazione",
+    subtitle: "Perché chiedere conferma non aiuta mai",
+    readTime: "3 min",
+    pro: true,
+    content: [
+      { type: "intro", text: "Chiedere rassicurazione — a persone vicine, a Google, o a se stessi — è una delle compulsioni più comuni e meno riconosciute. Sembra ragionevole: vuoi solo sapere se è tutto okay." },
+      { type: "heading", text: "Perché non funziona" },
+      { type: "text", text: "Il problema è che il DOC non si accontenta mai di una risposta. Dopo la rassicurazione, il dubbio torna — spesso più forte. Il cervello impara che la rassicurazione è l'unico modo per stare bene, e inizia a cercarla sempre più spesso." },
+      { type: "callout", emoji: "🔄", text: "La rassicurazione alimenta il dubbio invece di eliminarlo. È come grattare una ferita — dà sollievo momentaneo ma la fa peggiorare." },
+      { type: "heading", text: "Come uscirne" },
+      { type: "text", text: "La risposta al dubbio non è la certezza — è imparare a tollerare l'incertezza. L'esercizio \"Sfida la Certezza\" in OCD Freedom ti aiuta a rivalutare quanto sia realmente probabile il tuo timore." },
+      { type: "callout", emoji: "🧠", text: "L'obiettivo non è essere sicuro al 100%. L'obiettivo è poter vivere bene anche con il dubbio." },
+    ],
+  },
+  {
+    id: "doc_tipi",
+    icon: "🗂️",
+    title: "I Tipi di DOC",
+    subtitle: "Non esiste un solo DOC",
+    readTime: "5 min",
+    pro: true,
+    content: [
+      { type: "intro", text: "Il DOC si manifesta in modi molto diversi da persona a persona. Conoscere il proprio \"tema\" aiuta a capire meglio i propri pattern e a lavorarci in modo più mirato." },
+      { type: "heading", text: "DOC da contaminazione" },
+      { type: "text", text: "Paura di germi, sporco, malattie, sostanze tossiche. Compulsioni tipiche: lavarsi le mani ripetutamente, evitare superfici, usare guanti o disinfettanti in modo eccessivo." },
+      { type: "heading", text: "DOC da controllo" },
+      { type: "text", text: "Paura di aver lasciato qualcosa di pericoloso attivo (gas, porte, fornelli). Compulsioni: verificare ripetutamente, tornare indietro più volte, fotografare per \"prova\"." },
+      { type: "heading", text: "DOC da pensieri intrusivi (Pure O)" },
+      { type: "text", text: "Pensieri indesiderati di fare del male, pensieri sessuali o religiosi disturbanti. Le compulsioni sono spesso mentali: neutralizzare, pregare, ripassare il pensiero per \"verificare\"." },
+      { type: "heading", text: "DOC da ordine e simmetria" },
+      { type: "text", text: "Bisogno che le cose siano \"giuste\" — in posizione perfetta, simmetriche, complete. Spesso accompagnato da un senso di disagio fisico quando qualcosa non è \"a posto\"." },
+      { type: "heading", text: "DOC da relazione" },
+      { type: "text", text: "Dubbi ossessivi sulla propria relazione sentimentale: \"lo amo davvero?\", \"è la persona giusta?\". Compulsioni: cercare rassicurazione dal partner, analizzare i propri sentimenti, confrontare le relazioni." },
+      { type: "callout", emoji: "💡", text: "Indipendentemente dal tema, il meccanismo è sempre lo stesso: ossessione → ansia → compulsione → sollievo temporaneo → rinforzo del ciclo. E la soluzione è sempre l'ERP." },
+    ],
+  },
+  {
+    id: "cervello_doc",
+    icon: "🔬",
+    title: "Il Cervello con il DOC",
+    subtitle: "Cosa succede davvero nella tua testa",
+    readTime: "4 min",
+    pro: true,
+    content: [
+      { type: "intro", text: "Il DOC non è \"nella tua testa\" nel senso di immaginato — è letteralmente nel tuo cervello. Le neuroscienze hanno identificato pattern specifici di attività cerebrale nelle persone con DOC." },
+      { type: "heading", text: "Il loop orbitofronto-striatale" },
+      { type: "text", text: "Nelle persone con DOC, c'è iperattività in un circuito che coinvolge la corteccia orbitofrontale, i gangli della base e il talamo. Questo circuito normalmente segnala quando qualcosa è \"sbagliato\" — nel DOC è cronicamente iperattivo." },
+      { type: "callout", emoji: "🚨", text: "È come avere un allarme antincendio che suona anche quando non c'è fuoco. Il segnale di pericolo è reale — ma la minaccia non lo è." },
+      { type: "heading", text: "La neuroplasticità come soluzione" },
+      { type: "text", text: "La buona notizia: il cervello può cambiare. Studi di neuroimaging mostrano che dopo 12 settimane di ERP, l'attività in queste aree si normalizza. La terapia cambia letteralmente la struttura del cervello." },
+      { type: "callout", emoji: "🌱", text: "Ogni volta che resisti a una compulsione, crei nuove connessioni neurali. Non è metafora — è biologia." },
+    ],
+  },
 ];
 
 const defaultPersistedState = {
   freedomDays: 0, streakDays: 0, lastOpenDate: null, firstOpenDate: null,
   testCompletions: 0, sosStartedCount: 0, sosCompletedCount: 0, lastSosStartedAt: null,
-  visitedTabs: { sos: false, test: false, path: false },
+  visitedTabs: { sos: false, test: false, path: false, learn: false },
   sosDailyHistory: {}, achievements: {}, openDates: [],
   exercisesCompleted: {}, onboarding: null,
   dailyTasksCompleted: {},
+  articlesRead: {},
+  sosSessions: [],
 };
 
 const onboardingSteps = [
@@ -118,17 +269,44 @@ function fmtDate(iso) {
   if (!iso) return "";
   return new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(iso));
 }
-
-function getDailyTasks() {
-  return [
-    { id: "open_app", label: "Apri l'app oggi", icon: "📱", trigger: "auto" },
-    { id: "use_sos", label: "Usa il SOS almeno una volta", icon: "🆘", trigger: "sos" },
-    { id: "do_exercise", label: "Completa un esercizio", icon: "🏋️", trigger: "exercise" },
-    { id: "read_message", label: "Leggi 3 messaggi durante il countdown", icon: "💬", trigger: "auto" },
-  ];
+function fmtDateTime(iso) {
+  if (!iso) return "";
+  return new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 }
 
-// ── Breathing Exercise ──────────────────────────────────────────────
+function getDailyTasks(persistedState) {
+  const dayOfWeek = new Date().getDay();
+  const streakDays = persistedState.streakDays || 0;
+  const sosCount = persistedState.sosCompletedCount || 0;
+
+  const base = [
+    { id: "open_app", label: "Sei tornato oggi 💚", icon: "✅", trigger: "auto" },
+    { id: "use_sos", label: "Completa una sessione SOS", icon: "🆘", trigger: "sos" },
+  ];
+
+  const rotating = [
+    { id: "do_exercise", label: "Fai un esercizio ERP guidato", icon: "🏋️", trigger: "exercise" },
+    { id: "read_article", label: "Leggi un articolo nella libreria", icon: "📖", trigger: "learn" },
+    { id: "do_exercise", label: "Prova il Respiro 4-7-8", icon: "🌬️", trigger: "exercise" },
+    { id: "read_article", label: "Scopri qualcosa sul tuo DOC", icon: "🔬", trigger: "learn" },
+    { id: "do_exercise", label: "Allenati con un esercizio", icon: "⚡", trigger: "exercise" },
+    { id: "read_article", label: "Leggi della terapia ERP", icon: "⚕️", trigger: "learn" },
+    { id: "do_exercise", label: "Completa un esercizio guidato", icon: "🎯", trigger: "exercise" },
+  ];
+
+  const third = rotating[dayOfWeek];
+  const tasks = [...base, third];
+
+  if (streakDays >= 2) {
+    tasks.push({ id: "streak_bonus", label: `Mantieni il tuo streak di ${streakDays} giorni 🔥`, icon: "🔥", trigger: "auto" });
+  } else if (sosCount > 0) {
+    tasks.push({ id: "sos_bonus", label: "Hai già resistito altre volte. Fallo ancora.", icon: "💪", trigger: "sos" });
+  }
+
+  return tasks;
+}
+
+// ── Exercises ───────────────────────────────────────────────────────
 function BreathingExercise({ onComplete, onExit }) {
   const phases = [
     { label: "Inspira", duration: 4, color: "#22d3ee", big: true },
@@ -156,7 +334,6 @@ function BreathingExercise({ onComplete, onExit }) {
     <div className="flex flex-col items-center gap-6 py-8 text-center">
       <p className="text-6xl">✨</p>
       <p className="text-2xl font-semibold">Ottimo!</p>
-      <p className="text-lab-muted">Come ti senti adesso?</p>
       <button onClick={onComplete} className="w-full rounded-2xl bg-cyan-400 py-4 font-semibold text-black">Concludi</button>
     </div>
   );
@@ -238,7 +415,6 @@ function GroundingExercise({ onComplete, onExit }) {
     <div className="flex flex-col items-center gap-6 py-8 text-center">
       <p className="text-6xl">✨</p>
       <p className="text-2xl font-semibold">Sei nel presente.</p>
-      <p className="text-sm text-lab-muted">Il pensiero ossessivo è solo un rumore sullo sfondo.</p>
       <button onClick={onComplete} className="w-full rounded-2xl bg-cyan-400 py-4 font-semibold text-black">Concludi</button>
     </div>
   );
@@ -294,8 +470,15 @@ function ExercisesTab({ persistedState, isPro, onExerciseComplete, onUnlockPress
           const canUse = ex.free || isPro;
           const done = persistedState.exercisesCompleted?.[ex.id];
           return (
-            <button key={ex.id} onClick={() => canUse ? setActive(ex.id) : onUnlockPress()}
-              className="w-full rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-left hover:bg-white/5 transition">
+            <button key={ex.id} onClick={() => {
+              if (canUse) {
+                posthog.capture?.("exercise_started", { exercise_id: ex.id });
+                setActive(ex.id);
+              } else {
+                posthog.capture?.("paywall_viewed", { source: "exercise_lock", exercise_id: ex.id });
+                onUnlockPress();
+              }
+            }} className="w-full rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-left hover:bg-white/5 transition">
               <div className="flex items-start gap-3">
                 <span className="text-3xl mt-0.5">{ex.icon}</span>
                 <div className="flex-1">
@@ -317,6 +500,132 @@ function ExercisesTab({ persistedState, isPro, onExerciseComplete, onUnlockPress
   );
 }
 
+// ── LEARN TAB ───────────────────────────────────────────────────────
+function ArticleReader({ article, onBack }) {
+  return (
+    <div className="w-full pb-32">
+      <button onClick={onBack} className="mb-4 flex items-center gap-1 text-sm text-lab-muted">
+        <ChevronLeft size={14} /> Libreria
+      </button>
+      <div className="rounded-2xl border border-white/10 bg-lab-panel p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-2xl">{article.icon}</span>
+          <span className="text-xs text-lab-muted">{article.readTime} di lettura</span>
+          {article.pro && <span className="ml-auto flex items-center gap-1 rounded-full bg-cyan-400/20 px-2 py-0.5 text-xs text-cyan-300"><Lock size={9} /> Pro</span>}
+        </div>
+        <h1 className="text-2xl font-bold mb-1">{article.title}</h1>
+        <p className="text-sm text-lab-muted mb-6">{article.subtitle}</p>
+        <div className="flex flex-col gap-4">
+          {article.content.map((block, i) => {
+            if (block.type === "intro") return <p key={i} className="text-base leading-relaxed text-white/90 font-medium">{block.text}</p>;
+            if (block.type === "heading") return <h2 key={i} className="text-lg font-semibold mt-2">{block.text}</h2>;
+            if (block.type === "text") return <p key={i} className="text-sm leading-relaxed text-white/80">{block.text}</p>;
+            if (block.type === "callout") return (
+              <div key={i} className="rounded-2xl border border-cyan-300/20 bg-cyan-400/5 p-4">
+                <p className="text-sm leading-relaxed">{block.emoji} {block.text}</p>
+              </div>
+            );
+            if (block.type === "list") return (
+              <ul key={i} className="flex flex-col gap-2">
+                {block.items.map((item, j) => (
+                  <li key={j} className="flex items-start gap-2 text-sm text-white/80">
+                    <span className="text-cyan-400 mt-0.5">•</span><span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            );
+            return null;
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LearnTab({ persistedState, isPro, onUnlockPress, onArticleRead }) {
+  const [activeArticle, setActiveArticle] = useState(null);
+
+  if (activeArticle) return <ArticleReader article={activeArticle} onBack={() => setActiveArticle(null)} />;
+
+  const readCount = Object.keys(persistedState.articlesRead || {}).length;
+  const freeArticles = learnArticles.filter(a => !a.pro);
+  const proArticles = learnArticles.filter(a => a.pro);
+
+  const handleOpen = (article) => {
+    if (article.pro && !isPro) {
+      posthog.capture?.("paywall_viewed", { source: "learn_article", article_id: article.id });
+      onUnlockPress(); return;
+    }
+    posthog.capture?.("learn_article_opened", { article_id: article.id });
+    onArticleRead(article.id);
+    setActiveArticle(article);
+  };
+
+  return (
+    <div className="w-full pb-32">
+      <div className="rounded-2xl border border-white/10 bg-lab-panel p-5 mb-4">
+        <p className="text-center text-2xl font-semibold mb-1">Libreria DOC</p>
+        <p className="text-center text-sm text-lab-muted mb-1">Capire il DOC è il primo passo per uscirne</p>
+        <p className="text-center text-xs text-cyan-400">{readCount}/{learnArticles.length} articoli letti</p>
+      </div>
+
+      <p className="text-xs font-medium text-lab-muted mb-3 uppercase tracking-widest px-1">Le basi — gratis</p>
+      <div className="flex flex-col gap-3 mb-5">
+        {freeArticles.map(article => {
+          const read = persistedState.articlesRead?.[article.id];
+          return (
+            <button key={article.id} onClick={() => handleOpen(article)}
+              className="w-full rounded-2xl border border-white/10 bg-lab-panel p-4 text-left hover:bg-white/5 transition">
+              <div className="flex items-start gap-3">
+                <span className="text-3xl mt-0.5">{article.icon}</span>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="font-semibold text-sm">{article.title}</p>
+                    {read && <span className="ml-auto text-xs text-cyan-400">✓ Letto</span>}
+                  </div>
+                  <p className="text-xs text-lab-muted">{article.subtitle}</p>
+                  <p className="text-xs text-white/30 mt-1">{article.readTime} di lettura</p>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="text-xs font-medium text-lab-muted mb-3 uppercase tracking-widest px-1">Approfondimenti — Pro</p>
+      <div className="flex flex-col gap-3">
+        {proArticles.map(article => {
+          const read = persistedState.articlesRead?.[article.id];
+          return (
+            <button key={article.id} onClick={() => handleOpen(article)}
+              className="w-full rounded-2xl border border-white/10 bg-lab-panel p-4 text-left hover:bg-white/5 transition">
+              <div className="flex items-start gap-3">
+                <span className="text-3xl mt-0.5">{article.icon}</span>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="font-semibold text-sm">{article.title}</p>
+                    {!isPro && <span className="ml-auto flex items-center gap-1 rounded-full bg-cyan-400/20 px-2 py-0.5 text-xs text-cyan-300"><Lock size={9} /> Pro</span>}
+                    {isPro && read && <span className="ml-auto text-xs text-cyan-400">✓ Letto</span>}
+                  </div>
+                  <p className="text-xs text-lab-muted">{article.subtitle}</p>
+                  <p className="text-xs text-white/30 mt-1">{article.readTime} di lettura</p>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {!isPro && (
+        <button onClick={() => { posthog.capture?.("paywall_viewed", { source: "learn_tab_banner" }); onUnlockPress(); }}
+          className="mt-5 w-full rounded-2xl border border-cyan-300/30 bg-cyan-400/10 py-3 text-sm text-cyan-300 font-medium">
+          🔒 Sblocca tutti gli articoli con Pro
+        </button>
+      )}
+    </div>
+  );
+}
+
 function CalendarTab({ persistedState, isPro, onUnlockPress }) {
   const openDates = new Set(persistedState.openDates || []);
   const today = getTodayIso();
@@ -326,18 +635,21 @@ function CalendarTab({ persistedState, isPro, onUnlockPress }) {
     return { iso, isToday: iso === today, active: openDates.has(iso) };
   });
 
-  const tasks = getDailyTasks();
-  const completedToday = persistedState.dailyTasksCompleted?.[today] || {};
+  const tasks = getDailyTasks(persistedState);
   const sosDoneToday = (persistedState.sosDailyHistory?.[today] || 0) > 0;
   const exerciseDoneToday = Object.keys(persistedState.exercisesCompleted || {}).length > 0;
+  const articleReadToday = Object.values(persistedState.articlesRead || {}).some(d => d === today);
 
   const taskStatus = {
     open_app: true,
     use_sos: sosDoneToday,
     do_exercise: exerciseDoneToday,
-    read_message: completedToday.read_message || false,
+    read_article: articleReadToday,
+    streak_bonus: (persistedState.streakDays || 0) >= 2,
+    sos_bonus: sosDoneToday,
   };
-  const tasksCompleted = Object.values(taskStatus).filter(Boolean).length;
+  const tasksCompleted = tasks.filter(t => taskStatus[t.id]).length;
+  const recentSessions = (persistedState.sosSessions || []).slice(-5).reverse();
 
   return (
     <div className="w-full rounded-2xl border border-white/10 bg-lab-panel p-5 pb-32">
@@ -346,7 +658,6 @@ function CalendarTab({ persistedState, isPro, onUnlockPress }) {
         {(persistedState.freedomDays || 0) <= 1 ? "Ogni grande cambiamento inizia da qui." : `${persistedState.freedomDays} giorni nel tuo percorso`}
       </p>
 
-      {/* Daily tasks */}
       <div className="mb-5">
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm font-semibold uppercase tracking-widest text-lab-muted">Task di oggi</p>
@@ -363,7 +674,21 @@ function CalendarTab({ persistedState, isPro, onUnlockPress }) {
         </div>
       </div>
 
-      {/* Calendar */}
+      {recentSessions.length > 0 && (
+        <div className="mb-5">
+          <p className="text-sm font-semibold uppercase tracking-widest text-lab-muted mb-2">Ultime sessioni SOS</p>
+          <div className="flex flex-col gap-1.5">
+            {recentSessions.map((s, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-900/40 px-3 py-2">
+                <span className="text-base">💪</span>
+                <p className="text-xs text-white/70 flex-1">Hai resistito</p>
+                <p className="text-xs text-lab-muted">{fmtDateTime(s)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-7 gap-1 mb-1">
         {["L","M","M","G","V","S","D"].map((d, i) => <p key={i} className="text-center text-xs text-white/30">{d}</p>)}
       </div>
@@ -381,7 +706,8 @@ function CalendarTab({ persistedState, isPro, onUnlockPress }) {
       <p className="text-center text-xs text-lab-muted mt-3">Ultimi 35 giorni · Cyan = giorno aperto</p>
 
       {!isPro && (
-        <button onClick={onUnlockPress} className="mt-5 w-full rounded-2xl border border-cyan-300/30 bg-cyan-400/10 py-3 text-sm text-cyan-300 font-medium">
+        <button onClick={() => { posthog.capture?.("paywall_viewed", { source: "cammino_banner" }); onUnlockPress(); }}
+          className="mt-5 w-full rounded-2xl border border-cyan-300/30 bg-cyan-400/10 py-3 text-sm text-cyan-300 font-medium">
           🔒 Sblocca storico illimitato con Pro
         </button>
       )}
@@ -399,22 +725,16 @@ function ScoreBar({ score, maxScore, color }) {
   );
 }
 
-// ── ONBOARDING ──────────────────────────────────────────────────────
 function OnboardingFlow({ onComplete }) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
-
   const handleAnswer = (key, value, idx) => {
     const newAnswers = { ...answers, [key]: value };
     if (onboardingSteps[step].minutiMap) newAnswers.minutiPerGiorno = onboardingSteps[step].minutiMap[idx];
     setAnswers(newAnswers);
-    if (step < onboardingSteps.length - 1) {
-      setTimeout(() => setStep(s => s + 1), 200);
-    } else {
-      onComplete(newAnswers);
-    }
+    if (step < onboardingSteps.length - 1) { setTimeout(() => setStep(s => s + 1), 200); }
+    else { onComplete(newAnswers); }
   };
-
   const current = onboardingSteps[step];
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-lab-bg px-4">
@@ -452,7 +772,6 @@ export default function App() {
   const [isPro, setIsPro] = useState(false);
   const [persistedState, setPersistedState] = useState(defaultPersistedState);
 
-  // SOS
   const [phase, setPhase] = useState("home");
   const [secondsLeft, setSecondsLeft] = useState(SESSION_DURATION);
   const [messageIndex, setMessageIndex] = useState(0);
@@ -462,28 +781,23 @@ export default function App() {
   const [showEncouragement, setShowEncouragement] = useState(false);
   const [showStopModal, setShowStopModal] = useState(false);
 
-  // Test
   const [testStage, setTestStage] = useState("intro");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswersByQuestion, setSelectedAnswersByQuestion] = useState({});
   const [analysisProgress, setAnalysisProgress] = useState(0);
 
-  // Paywall
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallPlan, setPaywallPlan] = useState("monthly");
   const [showAccount, setShowAccount] = useState(false);
 
-  // Achievement popup
   const [achievementQueue, setAchievementQueue] = useState([]);
   const [activeAchievementPopup, setActiveAchievementPopup] = useState(null);
   const [showAchievementPopup, setShowAchievementPopup] = useState(false);
   const appReadyRef = useRef(false);
 
-  // Init
   useEffect(() => {
     const key = import.meta.env.VITE_POSTHOG_KEY;
     if (key) posthog.init(key, { api_host: "https://app.posthog.com", person_profiles: "identified_only" });
-
     if (window.location.search.includes("pro=1")) {
       window.localStorage.setItem(PRO_KEY, "true");
       window.history.replaceState({}, "", window.location.pathname);
@@ -507,16 +821,18 @@ export default function App() {
     }
     const openDates = base.openDates || [];
     if (!openDates.includes(today)) base.openDates = [...openDates, today].slice(-90);
-
     if (!base.dailyTasksCompleted) base.dailyTasksCompleted = {};
     if (!base.dailyTasksCompleted[today]) base.dailyTasksCompleted[today] = {};
     base.dailyTasksCompleted[today].open_app = true;
+    if (!base.sosSessions) base.sosSessions = [];
+    if (!base.articlesRead) base.articlesRead = {};
 
     const hour = new Date().getHours();
     if (hour < 9) setTimeout(() => unlockAchievementDirect(base, "mattiniero"), 2000);
     if (hour >= 22) setTimeout(() => unlockAchievementDirect(base, "notturno"), 2000);
 
     setPersistedState(base);
+    posthog.capture?.("app_opened");
     setTimeout(() => { appReadyRef.current = true; }, 3000);
   }, []);
 
@@ -574,7 +890,14 @@ export default function App() {
     if (totalMin >= 100) unlockAchievement("minuti_100");
     if (totalMin >= 500) unlockAchievement("minuti_500");
   }, [persistedState.sosCompletedCount]);
-  useEffect(() => { const v = persistedState.visitedTabs || {}; if (v.sos && v.test && v.path) unlockAchievement("esploratore"); }, [persistedState.visitedTabs]);
+  useEffect(() => {
+    const readCount = Object.keys(persistedState.articlesRead || {}).length;
+    if (readCount >= 1) unlockAchievement("lettore");
+    if (readCount >= 3) unlockAchievement("studioso");
+    const proRead = learnArticles.filter(a => a.pro).every(a => persistedState.articlesRead?.[a.id]);
+    if (proRead && isPro) unlockAchievement("esperto");
+  }, [persistedState.articlesRead]);
+  useEffect(() => { const v = persistedState.visitedTabs || {}; if (v.sos && v.test && v.path && v.learn) unlockAchievement("esploratore"); }, [persistedState.visitedTabs]);
   useEffect(() => { const h = persistedState.sosDailyHistory || {}; if (getLastNDates(7).every(d => (h[d] ?? 0) < 2)) unlockAchievement("stai_cambiando"); }, [persistedState.sosDailyHistory]);
   useEffect(() => { setPersistedState(p => ({ ...p, visitedTabs: { ...p.visitedTabs, [activeTab]: true } })); }, [activeTab]);
 
@@ -586,7 +909,11 @@ export default function App() {
         if (prev <= 1) {
           clearInterval(timer); setPhase("post");
           posthog.capture?.("sos_completed");
-          setPersistedState(s => ({ ...s, sosCompletedCount: s.sosCompletedCount + 1 }));
+          setPersistedState(s => ({
+            ...s,
+            sosCompletedCount: s.sosCompletedCount + 1,
+            sosSessions: [...(s.sosSessions || []), new Date().toISOString()].slice(-50),
+          }));
           unlockAchievement("resistenza"); return 0;
         }
         return prev - 1;
@@ -614,7 +941,6 @@ export default function App() {
 
   const progressPercentage = useMemo(() => ((SESSION_DURATION - secondsLeft) / SESSION_DURATION) * 100, [secondsLeft]);
   const formattedTime = useMemo(() => { const m = Math.floor(secondsLeft / 60), s = secondsLeft % 60; return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`; }, [secondsLeft]);
-
   const testScore = useMemo(() => questions.map((_, i) => selectedAnswersByQuestion[i]).filter(v => typeof v === "number").reduce((s, v) => s + v, 0), [selectedAnswersByQuestion]);
   const resultBand = useMemo(() => getResultBand(testScore), [testScore]);
   const testProgress = useMemo(() => ((currentQuestionIndex + 1) / questions.length) * 100, [currentQuestionIndex]);
@@ -653,6 +979,7 @@ export default function App() {
   }, [testStage]);
 
   const handleExerciseComplete = (exerciseId, achievementId) => {
+    posthog.capture?.("exercise_completed", { exercise_id: exerciseId });
     setPersistedState(prev => {
       const updated = { ...prev, exercisesCompleted: { ...prev.exercisesCompleted, [exerciseId]: true } };
       const doneCount = Object.keys(updated.exercisesCompleted).length;
@@ -661,6 +988,10 @@ export default function App() {
       return updated;
     });
     if (achievementId) unlockAchievement(achievementId);
+  };
+
+  const handleArticleRead = (articleId) => {
+    setPersistedState(prev => ({ ...prev, articlesRead: { ...prev.articlesRead, [articleId]: getTodayIso() } }));
   };
 
   const onboarding = persistedState.onboarding;
@@ -675,19 +1006,17 @@ export default function App() {
   });
   const unlockedCount = achievementCards.filter(a => a.unlocked).length;
 
-  const openPaywall = () => setShowPaywall(true);
+  const openPaywall = () => { posthog.capture?.("paywall_viewed", { source: "generic" }); setShowPaywall(true); };
 
   const handleCheckout = () => {
-    const url = paywallPlan === "monthly"
-      ? import.meta.env.VITE_STRIPE_LINK_MONTHLY
-      : import.meta.env.VITE_STRIPE_LINK_ANNUAL;
+    const url = paywallPlan === "monthly" ? import.meta.env.VITE_STRIPE_LINK_MONTHLY : import.meta.env.VITE_STRIPE_LINK_ANNUAL;
     if (!url) { alert("Link non disponibile. Riprova tra poco."); return; }
+    posthog.capture?.("checkout_started", { plan: paywallPlan });
     window.open(url, "_blank");
   };
 
   return (
     <main className="min-h-screen bg-lab-bg font-sans text-lab-text">
-      {/* Onboarding */}
       {showOnboarding && !showDisclaimer && (
         <OnboardingFlow onComplete={(answers) => {
           window.localStorage.setItem(ONBOARDING_KEY, "true");
@@ -698,12 +1027,10 @@ export default function App() {
 
       <div className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col px-4 pt-[max(2.5rem,env(safe-area-inset-top))] pb-28">
 
-        {/* SOS Header */}
         {activeTab === "sos" && (
           <header className={`text-center relative mt-4 ${phase === "timer" ? "mb-4" : "mb-6"}`}>
             {phase !== "timer" && (
-              <button onClick={() => setShowAccount(true)}
-                className="absolute right-0 top-0 p-2 text-lab-muted hover:text-white transition">
+              <button onClick={() => setShowAccount(true)} className="absolute right-0 top-0 p-2 text-lab-muted hover:text-white transition">
                 <Settings size={22} />
               </button>
             )}
@@ -716,13 +1043,12 @@ export default function App() {
           </header>
         )}
 
-        {/* SOS Home */}
         {activeTab === "sos" && phase === "home" && (
           <div className={centered}>
             <div className="w-full rounded-2xl border border-white/10 bg-lab-panel p-6 flex flex-col items-center gap-4">
               {showEncouragement && (
                 <p className="w-full rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-center text-sm text-emerald-200">
-                  Hai vinto un round contro il DOC. Continua così!
+                  Hai vinto un round contro il DOC. Continua così! 💚
                 </p>
               )}
               {!isSelectingPre ? (<>
@@ -744,7 +1070,6 @@ export default function App() {
           </div>
         )}
 
-        {/* SOS Timer */}
         {activeTab === "sos" && phase === "timer" && (
           <div className={centered}>
             <div className="w-full rounded-2xl border border-white/10 bg-lab-panel p-6">
@@ -765,7 +1090,6 @@ export default function App() {
           </div>
         )}
 
-        {/* SOS Post */}
         {activeTab === "sos" && phase === "post" && (
           <div className={centered}>
             <div className="w-full rounded-2xl border border-white/10 bg-lab-panel p-6">
@@ -784,7 +1108,6 @@ export default function App() {
           </div>
         )}
 
-        {/* TEST */}
         {activeTab === "test" && (
           <div className={testStage === "quiz" ? "w-full" : centered}>
             <div className="w-full rounded-2xl border border-white/10 bg-lab-panel p-6">
@@ -800,7 +1123,6 @@ export default function App() {
                   <button onClick={beginTestQuiz} className={`mt-2 ${primaryBtn}`}>Inizia il Test</button>
                 </div>
               )}
-
               {testStage === "quiz" && (<>
                 <div className="mb-4 h-2.5 overflow-hidden rounded-full bg-lab-soft">
                   <div className="h-full rounded-full bg-cyan-400 transition-all duration-500" style={{ width: `${testProgress}%` }} />
@@ -820,7 +1142,6 @@ export default function App() {
                   ))}
                 </div>
               </>)}
-
               {testStage === "loading" && (
                 <div className="flex flex-col items-center gap-4 py-8 text-center">
                   <p className="text-2xl font-semibold">Analisi in corso</p>
@@ -830,7 +1151,6 @@ export default function App() {
                   <p className="text-sm text-lab-muted">{analysisProgress}%</p>
                 </div>
               )}
-
               {testStage === "result" && (
                 <div className="flex flex-col items-center gap-4 py-2">
                   <h2 className="text-center text-2xl font-semibold">Risultato Test OCD</h2>
@@ -842,7 +1162,7 @@ export default function App() {
                     <div className="w-full rounded-2xl border border-cyan-300/40 bg-cyan-400/10 p-4 text-center">
                       <p className="font-semibold">Sblocca il tuo Percorso di Libertà</p>
                       <p className="mt-1 text-sm text-lab-muted">7 giorni gratis, poi €8,99/mese o €49,99/anno</p>
-                      <button onClick={openPaywall} className={`mt-4 ${primaryBtn}`}>Inizia Prova Gratuita</button>
+                      <button onClick={() => { posthog.capture?.("paywall_viewed", { source: "test_result" }); openPaywall(); }} className={`mt-4 ${primaryBtn}`}>Inizia Prova Gratuita</button>
                     </div>
                   )}
                   <button onClick={() => setTestStage("intro")} className={secondaryBtn}>Rifai il Test</button>
@@ -852,7 +1172,12 @@ export default function App() {
           </div>
         )}
 
-        {/* PERCORSO */}
+        {activeTab === "learn" && (
+          <div className="mt-4 w-full">
+            <LearnTab persistedState={persistedState} isPro={isPro} onUnlockPress={openPaywall} onArticleRead={handleArticleRead} />
+          </div>
+        )}
+
         {activeTab === "path" && !showPaywall && (<>
           <div className="mt-4 mb-4 flex gap-1.5 rounded-2xl border border-white/10 bg-slate-900/60 p-1">
             {[["progressi", "Progressi"], ["esercizi", "Esercizi"], ["cammino", "Cammino"]].map(([id, label]) => (
@@ -868,7 +1193,6 @@ export default function App() {
               <p className="text-center text-2xl font-semibold mb-1">Il Tuo Percorso</p>
               {onboarding?.obiettivo && <p className="text-center text-sm text-lab-muted mb-5">Obiettivo: {onboarding.obiettivo}</p>}
               {!onboarding && <p className="text-center text-sm text-lab-muted mb-5"></p>}
-
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
                   <p className="text-xs uppercase tracking-widest text-lab-muted mb-1">🧠 Giorni di Libertà</p>
@@ -890,21 +1214,17 @@ export default function App() {
                   <p className="text-xs text-lab-muted">giorni di fila</p>
                 </div>
               </div>
-
               <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-4 mb-4 text-center">
                 <p className="text-xs text-lab-muted leading-relaxed">
                   💡 <strong className="text-white">Basato sulla terapia ERP</strong> — il metodo evidence-based più efficace per il DOC, usato da specialisti in tutto il mondo.
                 </p>
               </div>
-
               <p className="text-xs font-medium text-lab-muted mb-3 uppercase tracking-widest">Achievement {unlockedCount}/{achievements.length}</p>
               <div className="grid grid-cols-2 gap-3">
                 {achievementCards.map(a => {
                   const proLocked = a.pro && !isPro;
                   return (
-                    <div key={a.id} className={`rounded-2xl border p-4 flex flex-col items-center text-center gap-1 transition ${
-                      a.unlocked ? "border-cyan-300/40 bg-cyan-400/10" : "border-white/10 bg-slate-900/50 opacity-50"
-                    }`}>
+                    <div key={a.id} className={`rounded-2xl border p-4 flex flex-col items-center text-center gap-1 transition ${a.unlocked ? "border-cyan-300/40 bg-cyan-400/10" : "border-white/10 bg-slate-900/50 opacity-50"}`}>
                       <p className="text-3xl">{a.unlocked ? a.icon : "🔒"}</p>
                       <p className="text-sm font-semibold leading-tight">{a.title}</p>
                       <p className="text-xs text-lab-muted leading-snug">{a.desc}</p>
@@ -914,8 +1234,7 @@ export default function App() {
                   );
                 })}
               </div>
-
-              {!isPro && <button onClick={openPaywall} className={`mt-6 ${secondaryBtn}`}>Percorso Completo Pro</button>}
+              {!isPro && <button onClick={() => { posthog.capture?.("paywall_viewed", { source: "progressi_bottom" }); openPaywall(); }} className={`mt-6 ${secondaryBtn}`}>Percorso Completo Pro</button>}
             </div>
           )}
 
@@ -923,7 +1242,6 @@ export default function App() {
           {pathTab === "cammino" && <CalendarTab persistedState={persistedState} isPro={isPro} onUnlockPress={openPaywall} />}
         </>)}
 
-        {/* PAYWALL */}
         {activeTab === "path" && showPaywall && (
           <div className={centered}>
             <div className="w-full rounded-2xl border border-white/10 bg-lab-panel p-6">
@@ -931,9 +1249,8 @@ export default function App() {
               <h2 className="text-2xl font-semibold mb-2">Sblocca il tuo Percorso di Libertà</h2>
               <p className="text-sm text-lab-muted mb-4">7 giorni gratis, poi continua solo se lo vuoi.</p>
               <ul className="space-y-2 mb-5 text-sm">
-                {["✓ Tutti gli esercizi ERP sbloccati", "✓ Achievement avanzati", "✓ Minuti di vita ripresi tracciati", "✓ Storico test OCD comparativo", "✓ Cammino con storico illimitato"].map(f => <li key={f}>{f}</li>)}
+                {["✓ Tutti gli esercizi ERP sbloccati", "✓ Libreria articoli Pro — 5 approfondimenti sul DOC", "✓ Achievement avanzati", "✓ Minuti di vita ripresi tracciati", "✓ Storico test OCD comparativo", "✓ Cammino con storico illimitato"].map(f => <li key={f}>{f}</li>)}
               </ul>
-
               <div className="grid grid-cols-2 gap-2 mb-4">
                 {[
                   { id: "monthly", label: "Mensile", price: "€8,99/mese", badge: null },
@@ -947,7 +1264,6 @@ export default function App() {
                   </button>
                 ))}
               </div>
-
               <button onClick={handleCheckout} className={primaryBtn}>Inizia 7 giorni gratis</button>
               <p className="text-center text-xs text-lab-muted mt-2">Nessun addebito oggi · Cancella quando vuoi</p>
               <button onClick={() => setShowPaywall(false)} className={`mt-3 ${secondaryBtn}`}>Torna al percorso</button>
@@ -957,16 +1273,17 @@ export default function App() {
 
       </div>
 
-      {/* NAV */}
+      {/* NAV — 4 tab */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-slate-950/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-[430px] items-center justify-around px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
+        <div className="mx-auto flex w-full max-w-[430px] items-center justify-around px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
           {[
             { id: "sos", label: "SOS", icon: Home },
             { id: "test", label: "Test OCD", icon: ClipboardList },
+            { id: "learn", label: "Impara", icon: BookOpen },
             { id: "path", label: "Percorso", icon: Trophy },
           ].map(({ id, label, icon: Icon }) => (
             <button key={id} onClick={() => { setActiveTab(id); if (id === "path") setShowPaywall(false); }}
-              className={`flex min-w-[88px] flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs transition ${activeTab === id ? "bg-cyan-400/20 text-cyan-300" : "text-lab-muted hover:text-lab-text"}`}>
+              className={`flex min-w-[72px] flex-col items-center gap-1 rounded-2xl px-2 py-2 text-xs transition ${activeTab === id ? "bg-cyan-400/20 text-cyan-300" : "text-lab-muted hover:text-lab-text"}`}>
               <Icon size={18} /><span>{label}</span>
             </button>
           ))}
@@ -981,33 +1298,27 @@ export default function App() {
               <h2 className="text-xl font-semibold">Account</h2>
               <button onClick={() => setShowAccount(false)} className="text-lab-muted text-2xl leading-none">×</button>
             </div>
-
             <div className={`rounded-2xl border p-4 text-center ${isPro ? "border-cyan-300/40 bg-cyan-400/10" : "border-white/10 bg-slate-900/60"}`}>
               <p className="font-semibold">{isPro ? "✨ Piano Pro Attivo" : "Piano Gratuito"}</p>
               {!isPro && (
-                <button
-                  onClick={() => { setShowAccount(false); openPaywall(); }}
-                  className="mt-3 w-full rounded-2xl bg-cyan-400 py-3 text-sm font-semibold text-black"
-                >
+                <button onClick={() => { setShowAccount(false); openPaywall(); }}
+                  className="mt-3 w-full rounded-2xl bg-cyan-400 py-3 text-sm font-semibold text-black">
                   Prova Pro Gratis · 7 giorni, poi €8,99/mese
                 </button>
               )}
             </div>
-
             {isPro && (
               <button onClick={() => window.open("https://billing.stripe.com/p/login/4gMcN4eqy8nT06bfCg0Jq00", "_blank")}
                 className="w-full rounded-2xl border border-white/30 py-3 text-sm text-white hover:bg-white/10 transition">
                 Gestisci abbonamento
               </button>
             )}
-
             <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-sm text-lab-muted space-y-1.5">
-              <p>📱 OCD Freedom — v1.0</p>
+              <p>📱 OCD Freedom — v1.1</p>
               <p>🧠 Basato sulla terapia ERP</p>
               <p>⚠️ Strumento educativo, non diagnosi</p>
               <p>🚨 Emergenze: chiama il 112</p>
             </div>
-
             <button onClick={() => {
               if (window.confirm("Sei sicuro? Tutti i progressi verranno cancellati.")) {
                 window.localStorage.clear(); window.location.reload();
