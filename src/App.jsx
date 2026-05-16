@@ -73,7 +73,6 @@ const achievements = [
   { id: "esperto", icon: "🧩", title: "Esperto", desc: "Letti tutti gli articoli Pro", pro: true },
 ];
 
-// ── ARTICOLI IMPARA ─────────────────────────────────────────────────
 const learnArticles = [
   {
     id: "cos_e_doc",
@@ -280,7 +279,8 @@ function getDailyTasks(persistedState) {
   const sosCount = persistedState.sosCompletedCount || 0;
 
   const base = [
-    { id: "open_app", label: "Sei tornato oggi 💚", icon: "✅", trigger: "auto" },
+    // FIX: usa 🟢 invece di ✅ per evitare il checkbox nativo iOS
+    { id: "open_app", label: "Sei tornato oggi 💚", icon: "🟢", trigger: "auto" },
     { id: "use_sos", label: "Completa una sessione SOS", icon: "🆘", trigger: "sos" },
   ];
 
@@ -299,7 +299,7 @@ function getDailyTasks(persistedState) {
 
   if (streakDays >= 2) {
     tasks.push({ id: "streak_bonus", label: `Mantieni il tuo streak di ${streakDays} giorni 🔥`, icon: "🔥", trigger: "auto" });
-  } else if (sosCount > 0) {
+  } else if (sosCount >= 1) {
     tasks.push({ id: "sos_bonus", label: "Hai già resistito altre volte. Fallo ancora.", icon: "💪", trigger: "sos" });
   }
 
@@ -759,6 +759,49 @@ function OnboardingFlow({ onComplete }) {
   );
 }
 
+// ── PAYWALL COMPONENT — globale, funziona da qualsiasi tab ──────────
+function PaywallModal({ paywallPlan, setPaywallPlan, onClose, onCheckout, primaryBtn, secondaryBtn }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <div className="w-full max-w-[430px] rounded-2xl border border-white/10 bg-lab-panel p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles size={18} className="text-cyan-300" />
+          <p className="text-sm uppercase tracking-widest text-cyan-300">Percorso Pro</p>
+          <button onClick={onClose} className="ml-auto text-lab-muted text-2xl leading-none hover:text-white">×</button>
+        </div>
+        <h2 className="text-2xl font-semibold mb-2">Sblocca il tuo Percorso di Libertà</h2>
+        <p className="text-sm text-lab-muted mb-4">7 giorni gratis, poi continua solo se lo vuoi.</p>
+        <ul className="space-y-2 mb-5 text-sm">
+          {[
+            "✓ Tutti gli esercizi ERP sbloccati",
+            "✓ Libreria articoli Pro — 5 approfondimenti sul DOC",
+            "✓ Achievement avanzati",
+            "✓ Minuti di vita ripresi tracciati",
+            "✓ Storico test OCD comparativo",
+            "✓ Cammino con storico illimitato",
+          ].map(f => <li key={f}>{f}</li>)}
+        </ul>
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {[
+            { id: "monthly", label: "Mensile", price: "€8,99/mese", badge: null },
+            { id: "annual", label: "Annuale", price: "€49,99/anno", badge: "Risparmia 53%" },
+          ].map(plan => (
+            <button key={plan.id} onClick={() => setPaywallPlan(plan.id)}
+              className={`rounded-2xl border p-3 text-center transition ${paywallPlan === plan.id ? "border-cyan-400 bg-cyan-400/20" : "border-white/20 bg-slate-900/60"}`}>
+              {plan.badge && <p className="text-xs text-emerald-400 mb-1">{plan.badge}</p>}
+              <p className="font-semibold text-sm">{plan.label}</p>
+              <p className="text-cyan-400 text-sm font-bold">{plan.price}</p>
+            </button>
+          ))}
+        </div>
+        <button onClick={onCheckout} className={primaryBtn}>Inizia 7 giorni gratis</button>
+        <p className="text-center text-xs text-lab-muted mt-2">Nessun addebito oggi · Cancella quando vuoi</p>
+        <button onClick={onClose} className={`mt-3 ${secondaryBtn}`}>Chiudi</button>
+      </div>
+    </div>
+  );
+}
+
 // ── MAIN APP ────────────────────────────────────────────────────────
 export default function App() {
   const primaryBtn = "w-full rounded-2xl bg-cyan-400 px-4 py-4 text-base font-semibold text-black transition hover:bg-cyan-300";
@@ -786,6 +829,7 @@ export default function App() {
   const [selectedAnswersByQuestion, setSelectedAnswersByQuestion] = useState({});
   const [analysisProgress, setAnalysisProgress] = useState(0);
 
+  // FIX: showPaywall è ora globale — funziona da qualsiasi tab
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallPlan, setPaywallPlan] = useState("monthly");
   const [showAccount, setShowAccount] = useState(false);
@@ -1006,7 +1050,10 @@ export default function App() {
   });
   const unlockedCount = achievementCards.filter(a => a.unlocked).length;
 
-  const openPaywall = () => { posthog.capture?.("paywall_viewed", { source: "generic" }); setShowPaywall(true); };
+  const openPaywall = (source = "generic") => {
+    posthog.capture?.("paywall_viewed", { source });
+    setShowPaywall(true);
+  };
 
   const handleCheckout = () => {
     const url = paywallPlan === "monthly" ? import.meta.env.VITE_STRIPE_LINK_MONTHLY : import.meta.env.VITE_STRIPE_LINK_ANNUAL;
@@ -1162,7 +1209,7 @@ export default function App() {
                     <div className="w-full rounded-2xl border border-cyan-300/40 bg-cyan-400/10 p-4 text-center">
                       <p className="font-semibold">Sblocca il tuo Percorso di Libertà</p>
                       <p className="mt-1 text-sm text-lab-muted">7 giorni gratis, poi €8,99/mese o €49,99/anno</p>
-                      <button onClick={() => { posthog.capture?.("paywall_viewed", { source: "test_result" }); openPaywall(); }} className={`mt-4 ${primaryBtn}`}>Inizia Prova Gratuita</button>
+                      <button onClick={() => openPaywall("test_result")} className={`mt-4 ${primaryBtn}`}>Inizia Prova Gratuita</button>
                     </div>
                   )}
                   <button onClick={() => setTestStage("intro")} className={secondaryBtn}>Rifai il Test</button>
@@ -1174,11 +1221,11 @@ export default function App() {
 
         {activeTab === "learn" && (
           <div className="mt-4 w-full">
-            <LearnTab persistedState={persistedState} isPro={isPro} onUnlockPress={openPaywall} onArticleRead={handleArticleRead} />
+            <LearnTab persistedState={persistedState} isPro={isPro} onUnlockPress={() => openPaywall("learn")} onArticleRead={handleArticleRead} />
           </div>
         )}
 
-        {activeTab === "path" && !showPaywall && (<>
+        {activeTab === "path" && (<>
           <div className="mt-4 mb-4 flex gap-1.5 rounded-2xl border border-white/10 bg-slate-900/60 p-1">
             {[["progressi", "Progressi"], ["esercizi", "Esercizi"], ["cammino", "Cammino"]].map(([id, label]) => (
               <button key={id} onClick={() => setPathTab(id)}
@@ -1234,42 +1281,13 @@ export default function App() {
                   );
                 })}
               </div>
-              {!isPro && <button onClick={() => { posthog.capture?.("paywall_viewed", { source: "progressi_bottom" }); openPaywall(); }} className={`mt-6 ${secondaryBtn}`}>Percorso Completo Pro</button>}
+              {!isPro && <button onClick={() => openPaywall("progressi_bottom")} className={`mt-6 ${secondaryBtn}`}>Percorso Completo Pro</button>}
             </div>
           )}
 
-          {pathTab === "esercizi" && <ExercisesTab persistedState={persistedState} isPro={isPro} onExerciseComplete={handleExerciseComplete} onUnlockPress={openPaywall} />}
-          {pathTab === "cammino" && <CalendarTab persistedState={persistedState} isPro={isPro} onUnlockPress={openPaywall} />}
+          {pathTab === "esercizi" && <ExercisesTab persistedState={persistedState} isPro={isPro} onExerciseComplete={handleExerciseComplete} onUnlockPress={() => openPaywall("esercizi")} />}
+          {pathTab === "cammino" && <CalendarTab persistedState={persistedState} isPro={isPro} onUnlockPress={() => openPaywall("cammino")} />}
         </>)}
-
-        {activeTab === "path" && showPaywall && (
-          <div className={centered}>
-            <div className="w-full rounded-2xl border border-white/10 bg-lab-panel p-6">
-              <div className="flex items-center gap-2 mb-3"><Sparkles size={18} className="text-cyan-300" /><p className="text-sm uppercase tracking-widest text-cyan-300">Percorso Pro</p></div>
-              <h2 className="text-2xl font-semibold mb-2">Sblocca il tuo Percorso di Libertà</h2>
-              <p className="text-sm text-lab-muted mb-4">7 giorni gratis, poi continua solo se lo vuoi.</p>
-              <ul className="space-y-2 mb-5 text-sm">
-                {["✓ Tutti gli esercizi ERP sbloccati", "✓ Libreria articoli Pro — 5 approfondimenti sul DOC", "✓ Achievement avanzati", "✓ Minuti di vita ripresi tracciati", "✓ Storico test OCD comparativo", "✓ Cammino con storico illimitato"].map(f => <li key={f}>{f}</li>)}
-              </ul>
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {[
-                  { id: "monthly", label: "Mensile", price: "€8,99/mese", badge: null },
-                  { id: "annual", label: "Annuale", price: "€49,99/anno", badge: "Risparmia 53%" },
-                ].map(plan => (
-                  <button key={plan.id} onClick={() => setPaywallPlan(plan.id)}
-                    className={`rounded-2xl border p-3 text-center transition ${paywallPlan === plan.id ? "border-cyan-400 bg-cyan-400/20" : "border-white/20 bg-slate-900/60"}`}>
-                    {plan.badge && <p className="text-xs text-emerald-400 mb-1">{plan.badge}</p>}
-                    <p className="font-semibold text-sm">{plan.label}</p>
-                    <p className="text-cyan-400 text-sm font-bold">{plan.price}</p>
-                  </button>
-                ))}
-              </div>
-              <button onClick={handleCheckout} className={primaryBtn}>Inizia 7 giorni gratis</button>
-              <p className="text-center text-xs text-lab-muted mt-2">Nessun addebito oggi · Cancella quando vuoi</p>
-              <button onClick={() => setShowPaywall(false)} className={`mt-3 ${secondaryBtn}`}>Torna al percorso</button>
-            </div>
-          </div>
-        )}
 
       </div>
 
@@ -1282,13 +1300,25 @@ export default function App() {
             { id: "learn", label: "Impara", icon: BookOpen },
             { id: "path", label: "Percorso", icon: Trophy },
           ].map(({ id, label, icon: Icon }) => (
-            <button key={id} onClick={() => { setActiveTab(id); if (id === "path") setShowPaywall(false); }}
+            <button key={id} onClick={() => setActiveTab(id)}
               className={`flex min-w-[72px] flex-col items-center gap-1 rounded-2xl px-2 py-2 text-xs transition ${activeTab === id ? "bg-cyan-400/20 text-cyan-300" : "text-lab-muted hover:text-lab-text"}`}>
               <Icon size={18} /><span>{label}</span>
             </button>
           ))}
         </div>
       </nav>
+
+      {/* PAYWALL GLOBALE — si apre da qualsiasi tab */}
+      {showPaywall && (
+        <PaywallModal
+          paywallPlan={paywallPlan}
+          setPaywallPlan={setPaywallPlan}
+          onClose={() => setShowPaywall(false)}
+          onCheckout={handleCheckout}
+          primaryBtn={primaryBtn}
+          secondaryBtn={secondaryBtn}
+        />
+      )}
 
       {/* ACCOUNT MODAL */}
       {showAccount && (
@@ -1301,7 +1331,7 @@ export default function App() {
             <div className={`rounded-2xl border p-4 text-center ${isPro ? "border-cyan-300/40 bg-cyan-400/10" : "border-white/10 bg-slate-900/60"}`}>
               <p className="font-semibold">{isPro ? "✨ Piano Pro Attivo" : "Piano Gratuito"}</p>
               {!isPro && (
-                <button onClick={() => { setShowAccount(false); openPaywall(); }}
+                <button onClick={() => { setShowAccount(false); openPaywall("account_modal"); }}
                   className="mt-3 w-full rounded-2xl bg-cyan-400 py-3 text-sm font-semibold text-black">
                   Prova Pro Gratis · 7 giorni, poi €8,99/mese
                 </button>
@@ -1314,7 +1344,7 @@ export default function App() {
               </button>
             )}
             <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-sm text-lab-muted space-y-1.5">
-              <p>📱 OCD Freedom — v1.1</p>
+              <p>📱 OCD Freedom — v1.2</p>
               <p>🧠 Basato sulla terapia ERP</p>
               <p>⚠️ Strumento educativo, non diagnosi</p>
               <p>🚨 Emergenze: chiama il 112</p>
